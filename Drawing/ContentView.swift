@@ -7,155 +7,47 @@
 //
 
 import SwiftUI
-
-struct Checkerboard: Shape {
-    var rows: Int
-    var columns: Int
-    
-    public var animatableData: AnimatablePair<Double, Double> {
-        get {
-            AnimatablePair(Double(rows), Double(columns))
-        }
-        set {
-            self.rows = Int(newValue.first)
-            self.columns = Int(newValue.second)
-        }
-    }
-    
+struct Arrow: Shape {
     func path(in rect: CGRect) -> Path {
         var path = Path()
         
-        // Figure out how big each row/column needs to be
-        let rowSize = rect.height / CGFloat(rows)
-        let columnSize = rect.width / CGFloat(columns)
+        // For the arrow head
+        path.move(to: CGPoint(x: rect.minX, y: rect.midY))
+        path.addLine(to: CGPoint(x: rect.midX, y: rect.maxY))
+        path.addLine(to: CGPoint(x: rect.midX, y: rect.minY))
+        path.addLine(to: CGPoint(x: rect.minX, y: rect.midY))
         
-        // loop over all rows and columns, making alternating squares colored
-        for row in 0..<rows {
-            for column in 0..<columns {
-                if (row + column).isMultiple(of: 2){
-                    // This square should be colored; add a rectangle here
-                    let startX = columnSize * CGFloat(column)
-                    let startY = rowSize * CGFloat(row)
-                    
-                    let rect = CGRect(x: startX, y: startY, width: columnSize, height: rowSize)
-                    
-                    path.addRect(rect)
-
-                }
-            }
-        }
+        // For the body
+        path.move(to: CGPoint(x: rect.midX, y: rect.midY + (rect.midY/2)))
+        path.addLine(to: CGPoint(x: rect.midX, y: rect.midY/2))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY/2))
+        path.addLine(to: CGPoint(x: rect.maxX, y: rect.midY + (rect.midY/2)))
+        path.addLine(to: CGPoint(x: rect.midX, y: rect.midY + (rect.midY/2)))
         
         return path
     }
 }
 
-struct Trapezoid: Shape{
-    var insetAmount: CGFloat
-    var animatableData: CGFloat {
-        get { insetAmount }
-        set { self.insetAmount = newValue }
-    }
-    
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        
-        path.move(to: CGPoint(x: 0, y: rect.maxY))
-        path.addLine(to: CGPoint(x: insetAmount, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.maxX - insetAmount, y: rect.minY))
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.maxY))
-        path.addLine(to: CGPoint(x: 0, y: rect.maxY))
-        
-        return path
-    }
-}
-struct Spirograph: Shape {
-    let innerRadius: Int
-    let outerRadius: Int
-    let distance: Int
-    let amount: CGFloat
-    
-    func path(in rect: CGRect) -> Path {
-        let divisor = gcd(innerRadius, outerRadius)
-        let outerRadius = CGFloat(self.outerRadius)
-        let innerRadius = CGFloat(self.innerRadius)
-        let distance = CGFloat(self.distance)
-        let difference = innerRadius - outerRadius
-        let endPoint = ceil(2 * CGFloat.pi * outerRadius / CGFloat(divisor)) * amount
-        
-        var path = Path()
-        
-        for theta in stride(from: 0, to: endPoint, by: 0.01){
-            var x = difference * cos(theta) + distance * cos(difference / outerRadius * theta)
-            var y = difference * sin(theta) - distance * sin(difference / outerRadius * theta)
-            
-            x += rect.width / 2
-            y += rect.height / 2
-            
-            if theta == 0 {
-                path.move(to: CGPoint(x: x, y: y))
-            }
-            else {
-                path.addLine(to: CGPoint(x: x, y: y))
-            }
-        }
-        
-        return path
-    }
-    
-    func gcd(_ a:Int, _ b: Int) -> Int {
-        var a = a
-        var b = b
-        
-        while b != 0 {
-            let temp = b
-            b = a%b
-            a = temp
-        }
-        
-        return a
-    }
-}
 struct ContentView: View {
-    @State private var innerRadius = 125.0
-    @State private var outerRadius = 75.0
-    @State private var distance = 25.0
-    @State private var amount: CGFloat = 1.0
-    @State private var hue = 0.6
+    @State private var line_width: CGFloat = 1.0
     var body: some View {
-        VStack(spacing: 0){
+        VStack{
             Spacer()
-            
-            Spirograph(innerRadius: Int(innerRadius), outerRadius: Int(outerRadius), distance: Int(distance), amount: amount)
-                .stroke(Color(hue: hue, saturation: 1, brightness: 1), lineWidth: 1)
+            Arrow()
+                .stroke(Color.red, style: StrokeStyle(lineWidth: self.line_width, lineCap: .round, lineJoin: .round))
                 .frame(width: 300, height: 300)
-                    
+                .animation(.easeInOut(duration: 0.2))
+            
             Spacer()
             
-            Group {
-                Text("Inner radius: \(Int(innerRadius))")
-                Slider(value: $innerRadius, in: 10...150, step: 1)
-                    .padding([.horizontal, .bottom])
-                
-                Text("Outer radius: \(Int(outerRadius))")
-                Slider(value: $outerRadius, in: 10...150, step: 1)
-                    .padding([.horizontal, .bottom])
-                
-                Text("Distance: \(Int(distance))")
-                Slider(value: $distance, in: 10...150, step: 1)
-                    .padding([.horizontal, .bottom])
-                
-                Text("Amount: \(amount, specifier: "%.2f")")
-                Slider(value: $amount)
-                    .padding([.horizontal, .bottom])
-                
-                Text("Color")
-                Slider(value: $hue)
-                    .padding(.horizontal)
-            }
+            Text("Arrow Line Width")
+            Slider(value: $line_width, in: 1...15)
+            
+            Spacer()
         }
+        
     }
 }
-
 struct ContentView_Previews: PreviewProvider {
     static var previews: some View {
         ContentView()
